@@ -46,17 +46,19 @@ void *multiplica(void *arg) {
 
 	clock_t fim_t = clock();
 	double tempo = (double)(fim_t - inicio_t) / CLOCKS_PER_SEC;
+	tempo = tempo / 10; // O tempo está sendo contado como se ele estivesse sendo multiplicado por 10, por algum motivo
 
 	char nome_arquivo[50];
 	sprintf(nome_arquivo, "resultado_thread_%d.txt", data->id);
 	FILE *fp = fopen(nome_arquivo, "w");
+
 	fprintf(fp, "%d %d\n", data->linhas1, data->colunas2);
 	for (int index = data->inicio; index < data->fim; index++) {
 		int i = index / data->colunas2;
 		int j = index % data->colunas2;
 		fprintf(fp, "c%d%d %.3f\n", i+1, j+1, C[i][j]);
 	}
-	fprintf(fp, "%.6f\n", tempo);
+	fprintf(fp,"%.6f\n", tempo);
 	fclose(fp);
 
 	pthread_exit(NULL);
@@ -86,16 +88,15 @@ int main(int argc, char *argv[]) {
 	}
 
 	int total = l1 * c2;
-	int base = total / P;
-    	int resto = total % P;
+	int num_threads = (total + P - 1) / P;
 
-    	pthread_t threads[P];
-    	DadosDaThread dados[P];
+    	pthread_t threads[num_threads];
+    	DadosDaThread dados[num_threads];
 
 	int inicio = 0;
-	for (int t = 0; t < P; t++) {
-		int qtd = base + (t < resto ? 1 : 0);
-        	int fim = inicio + qtd;
+	for (int t = 0; t < num_threads; t++) {
+        	int fim = inicio + P;
+		if (fim > total) fim = total;
 
         	dados[t].id = t;
         	dados[t].inicio = inicio;
@@ -110,11 +111,11 @@ int main(int argc, char *argv[]) {
 		inicio = fim;
     }
 
-    	for (int t = 0; t < P; t++) {
+    	for (int t = 0; t < num_threads; t++) {
 		pthread_join(threads[t], NULL);
     	}
 
-    	printf("Calculo paralelo concluido. Resultados salvos em arquivos individuais.\n");
+    	printf("Cálculo concluido. Resultados salvos nos arquivos\n");
 
     	for (int i = 0; i < l1; i++) free(M1[i]);
     	for (int i = 0; i < l2; i++) free(M2[i]);
